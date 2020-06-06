@@ -3,6 +3,7 @@ import music21 as m21
 from typing import Optional, Any
 
 KERN_DATASET_PATH = "deutschl/test"
+SAVE_DIR = "dataset"
 ACCEPTABLE_DURATIONS = [
     0.25,
     0.5,
@@ -65,23 +66,52 @@ def transpose(song: Optional[Any]) -> Optional[Any]:
     return transposed_song
 
 
+def encode_song(song, time_step=0.25) -> str:
+    # p = 60, d = 1.0 -> [60, "_", "_", "_"]
+    encoded_song = []
+
+    for event in song.flat.notesAndRests:
+        # Handle notes
+        if isinstance(event, m21.note.Note):
+            symbol = event.pitch.midi  # 60
+        # Handle rests
+        if isinstance(event, m21.note.Rest):
+            symbol = "r"
+
+        # Convert the note/rest into time series notation
+        steps = int(event.duration.quarterLength / time_step)
+        for step in range(steps):
+            if step == 0:
+                encoded_song.append(symbol)
+            else:
+                encoded_song.append("_")
+
+    # Cast encoded song to a str
+    encoded_song = "".join(map(str, encoded_song))
+    return encoded_song
+
+
 def preprocess(dataset_path):
     # Load the folk songs
     print("Loading songs...")
     songs = load_songs_in_kern(dataset_path)
     print(f"Loaded {len(songs)} songs.")
 
-    for song in songs:
+    for i, song in enumerate(songs):
         # Filter out songs that have non-acceptable durations
         if not has_acceptable_duration(song, ACCEPTABLE_DURATIONS):
             continue
 
-        # transpose songs to Cmaj/Amin
+        # Transpose songs to Cmaj/Amin
         song = transpose(song)
 
-        # TODO: encode songs with music time series represantation
+        # Encode songs with music time series represantation
+        encoded_song = encode_song(song)
 
-        # TODO: save songs to text file
+        # Save songs to text file
+        save_path = os.path.join(SAVE_DIR, str(i))
+        with open(save_path, "w") as fp:
+            fp.write(encoded_song)
 
 
 if __name__ == "__main__":
@@ -89,6 +119,8 @@ if __name__ == "__main__":
     songs = load_songs_in_kern(KERN_DATASET_PATH)
     print(f"Loaded {len(songs)} songs.")
     song = songs[0]
-    print(song)
-    print(f"Has acceptable duration? {has_acceptable_duration(song, ACCEPTABLE_DURATIONS)}")
-    transpose(song).show()
+
+    preprocess(KERN_DATASET_PATH)
+    # transpose song
+    transposed_song = transpose(song)
+    transposed_song.show()

@@ -56,3 +56,6 @@ staticfiles
 
 # Python venv
 venv/
+
+# Don't include generated dataset
+dataset/
