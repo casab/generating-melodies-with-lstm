@@ -1,9 +1,15 @@
 import os
+import json
 import music21 as m21
 from typing import Optional, Any
 
 KERN_DATASET_PATH = "deutschl/test"
 SAVE_DIR = "dataset"
+SINGLE_FILE_DATASET = "file_dataset"
+MAPPING_PATH = "mapping.json"
+SEQUENCE_LENGTH = 64
+
+# Durations are expressed in quarter length
 ACCEPTABLE_DURATIONS = [
     0.25,
     0.5,
@@ -87,7 +93,7 @@ def encode_song(song, time_step=0.25) -> str:
                 encoded_song.append("_")
 
     # Cast encoded song to a str
-    encoded_song = "".join(map(str, encoded_song))
+    encoded_song = " ".join(map(str, encoded_song))
     return encoded_song
 
 
@@ -114,13 +120,51 @@ def preprocess(dataset_path):
             fp.write(encoded_song)
 
 
-if __name__ == "__main__":
-    # TODO: WILL BE REMOVED. Some tests are done here.
-    songs = load_songs_in_kern(KERN_DATASET_PATH)
-    print(f"Loaded {len(songs)} songs.")
-    song = songs[0]
+def load(file_path):
+    with open(file_path, "r") as fp:
+        song = fp.read()
+    return song
 
+
+def create_single_file_dataset(dataset_path, file_dataset_path, sequence_length):
+    new_song_delimiter = "/ " * sequence_length
+    songs = ""
+
+    # Load encoded songs and add delimeters
+    for path, _, files in os.walk(dataset_path):
+        for file in files:
+            file_path = os.path.join(path, file)
+            song = load(file_path)
+            songs += song + " " + new_song_delimiter
+
+    songs = songs[:-1]
+    # Save string that contains all dataset
+    with open(file_dataset_path, "w") as fp:
+        fp.write(songs)
+
+    return songs
+
+
+def create_mapping(songs, mapping_path):
+    mappings = {}
+    # Identify the vocabulary
+    songs = songs.split()
+    vocabulary = list(set(songs))
+
+    # Create mappings
+    for i, symbol in enumerate(vocabulary):
+        mappings[symbol] = i
+
+    # Save vocabulary to a json file
+    with open(mapping_path, "w") as fp:
+        json.dump(mappings, fp, indent=4)
+
+
+def main():
     preprocess(KERN_DATASET_PATH)
-    # transpose song
-    transposed_song = transpose(song)
-    transposed_song.show()
+    songs = create_single_file_dataset(SAVE_DIR, SINGLE_FILE_DATASET, SEQUENCE_LENGTH)
+    create_mapping(songs, MAPPING_PATH)
+
+
+if __name__ == "__main__":
+    main()
