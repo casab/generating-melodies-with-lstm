@@ -5,7 +5,7 @@ from typing import Optional, Any
 import numpy as np
 import tensorflow.keras as keras
 
-KERN_DATASET_PATH = "deutschl/test"
+KERN_DATASET_PATH = "deutschl/erk"
 SAVE_DIR = "dataset"
 SINGLE_FILE_DATASET = "file_dataset"
 MAPPING_PATH = "mapping.json"
